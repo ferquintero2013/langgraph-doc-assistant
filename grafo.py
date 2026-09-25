@@ -12,6 +12,7 @@ DEMOSTRACION TECNICA construida con documentacion publica de AUCO
 
 import json
 import os
+import re
 from operator import add
 from typing import Annotated, TypedDict
 
@@ -131,9 +132,29 @@ def reformular(estado: Estado) -> dict:
                 "detalle": f"Al vocabulario del producto: “{nueva}”"}]}
 
 
+# Los mensajes de respaldo no los redacta el modelo, asi que hay que
+# elegir su idioma a mano. Se resuelve con palabras vacias, sin una llamada
+# extra: en el camino en que el sistema ya esta fallando, lo ultimo que
+# conviene es anadir algo mas que pueda fallar.
+_PISTAS_EN = {"the", "what", "how", "can", "does", "do", "is", "are", "which",
+              "when", "where", "why", "i", "you", "it", "and", "for", "with",
+              "your", "my", "me", "of", "to", "a", "an"}
+_PISTAS_ES = {"el", "la", "los", "las", "que", "como", "puedo", "puede", "es",
+              "son", "cual", "cuales", "cuando", "donde", "por", "para", "con",
+              "mi", "tu", "su", "de", "un", "una", "y", "necesito", "sirve"}
+
+
+def en_ingles(texto):
+    palabras = set(re.findall(r"[a-zA-ZáéíóúñÁÉÍÓÚÑ]+", (texto or "").lower()))
+    return len(palabras & _PISTAS_EN) > len(palabras & _PISTAS_ES)
+
+
 def responder(estado: Estado) -> dict:
     if not estado["documentos"]:
-        texto = ("No encuentro eso en la documentacion publica de AUCO. "
+        texto = ("I can't find that in AUCO's public documentation. "
+                 "It may be something their support team handles directly."
+                 if en_ingles(estado["pregunta"]) else
+                 "No encuentro eso en la documentacion publica de AUCO. "
                  "Puede que este en el soporte directo del equipo.")
         traza = estado["traza"] + [{"paso": "Respuesta", "detalle": "Declina: sin cobertura"}]
     else:
@@ -154,8 +175,18 @@ def responder(estado: Estado) -> dict:
                      "puedes hacer, y para alguien que esta integrando es peor que no "
                      "responder.\n"
                      "Lo mismo con 'no soporta', 'no existe', 'no es posible': solo si "
-                     "la documentacion lo dice explicitamente."),
-                    f"PREGUNTA:\n{estado['consulta']}\n\nDOCUMENTACION:\n{contexto}")
+                     "la documentacion lo dice explicitamente.\n\n"
+                     "IDIOMA — regla absoluta.\n"
+                     "Responde SIEMPRE en el idioma de LO QUE ESCRIBIO EL VISITANTE, "
+                     "nunca en el de la consulta reescrita ni en el de estas "
+                     "instrucciones. La consulta reescrita la produjo un modelo que "
+                     "piensa en espanol: que venga en espanol no dice nada sobre el "
+                     "idioma del visitante. Si el visitante escribio en ingles, "
+                     "respondes en ingles. Los nombres de endpoints y parametros no se "
+                     "traducen nunca."),
+                    (f"CONTEXTO:\n\n{contexto}\n\n---\n\n"
+                     f"LO QUE ESCRIBIO EL VISITANTE: {estado['pregunta']}\n"
+                     f"PREGUNTA BUSCADA (reescrita para el buscador): {estado['consulta']}"))
         traza = estado["traza"] + [{"paso": "Respuesta", "detalle": "Redactada con GPT-4o"}]
     return {"respuesta": texto, "traza": traza,
             "historial": [{"quien": "usuario", "texto": estado["pregunta"]},
@@ -194,7 +225,11 @@ def verificar(estado: Estado) -> dict:
 
 
 def declinar(estado: Estado) -> dict:
-    texto = ("Prefiero no responder eso: la respuesta que redacte no quedaba "
+    texto = ("I'd rather not answer that: the reply I drafted wasn't backed by the "
+             "public documentation, and I prefer saying so over risking giving you "
+             "something made up."
+             if en_ingles(estado["pregunta"]) else
+             "Prefiero no responder eso: la respuesta que redacte no quedaba "
              "respaldada por la documentacion publica, y prefiero decirlo a "
              "arriesgarme a darte un dato inventado.")
     return {"respuesta": texto,

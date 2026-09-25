@@ -1,8 +1,15 @@
-streamlit
-langgraph
-openai
-numpy
-rank-bm25
-python-dotenv
-beautifulsoup4
-lxml
+# Versiones fijadas el 2026-09-25: son contra las que se probaron las
+# respuestas. Sin fijarlas, Streamlit Cloud instala lo ultimo en cada
+# reconstruccion y un cambio incompatible rompe el demo solo, semanas
+# despues, sin que nadie haya tocado el codigo.
+#
+# El operador ~= admite parches y correcciones de seguridad, pero bloquea
+# los cambios de version menor, que son los que rompen.
+streamlit~=1.64.0
+langgraph~=1.2.12
+openai~=3.19.2
+numpy~=2.5.3
+rank-bm25~=0.2.2
+python-dotenv~=1.2.3
+beautifulsoup4~=4.15.0
+lxml~=6.1.3
