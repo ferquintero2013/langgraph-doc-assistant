@@ -1,0 +1,11 @@
+# Nunca al repositorio: la clave de OpenAI
+.env
+.env.*
+# ...salvo la plantilla, que va vacia y si debe viajar.
+# (en .gitignore el '#' solo comenta al inicio de linea, nunca al final)
+!.env.example
+.streamlit/secrets.toml
+
+venv/
+__pycache__/
+*.pyc

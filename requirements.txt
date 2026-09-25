@@ -1,0 +1,8 @@
+streamlit
+langgraph
+openai
+numpy
+rank-bm25
+python-dotenv
+beautifulsoup4
+lxml
